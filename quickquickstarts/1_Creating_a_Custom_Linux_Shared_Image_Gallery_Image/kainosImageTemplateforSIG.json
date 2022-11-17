@@ -1,0 +1,174 @@
+{
+    "type": "Microsoft.VirtualMachineImages",
+    "apiVersion": "2019-05-01-preview",
+    "location": "<region1>",
+    "dependsOn": [],
+    "tags": {
+        "imagebuilderTemplate": "AzureImageBuilderSIG",
+        "userIdentity": "enabled"
+            },
+        "identity": {
+            "type": "UserAssigned",
+                    "userAssignedIdentities": {
+                    "<imgBuilderId>": {}
+                        
+                }
+                },
+    
+    "properties": {
+
+        "buildTimeoutInMinutes" : 80,
+
+        "vmProfile": 
+            {
+            "vmSize": "Standard_D1_v2",
+            "osDiskSizeGB": 30
+            },
+        
+        "source": {
+            "type": "PlatformImage",
+                "publisher": "Canonical",
+                "offer": "UbuntuServer",
+                "sku": "18.04-LTS",
+                "version": "latest"
+            
+        },
+        "customize": [
+            {
+                "type": "Shell",
+                "name": "RunScriptFromSource",
+                "scriptUri": "https://raw.githubusercontent.com/Mark-Jack-Kainos/azvmimagebuilder/d74e73144b532b3be8b5c5b691cb4391fd46b439/quickquickstarts/customizeScript.sh"
+            },
+
+            {
+                "type": "Shell",
+                "name": "CheckSumCompareShellScript",
+                "scriptUri": "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/customizeScript2.sh",
+                "sha256Checksum": "ade4c5214c3c675e92c66e2d067a870c5b81b9844b3de3cc72c49ff36425fc93"
+            },
+        
+            
+            {
+                "type": "File",
+                "name": "downloadBuildArtifacts",
+                "sourceUri": "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/exampleArtifacts/buildArtifacts/index.html",
+                "destination":"/tmp/index.html"
+            },
+
+            {
+                "type": "Shell",
+                "name": "setupBuildPath",
+                "inline": [
+                    "sudo mkdir /buildArtifacts",
+                    "sudo cp /tmp/index.html /buildArtifacts/index.html"
+                ]
+            },
+
+            {
+                "type": "Shell",
+                "name": "InstallUpgrades",
+                "inline": [
+                    "sudo apt install unattended-upgrades"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "InstallAzureCLI",
+                "inline": [
+                    "curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install Devops extension",
+                "inline": [
+                    "sudo az extension add --name azure-devops --system"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Allow installs",
+                "inline": [
+                    "az config set extension.use_dynamic_install=yes_without_prompt"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Update GIT",
+                "inline": [
+                    "sudo add-apt-repository ppa:git-core/ppa -y",
+                    "sudo apt-get update",
+                    "sudo apt-get install git -y"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install jq",
+                "inline": [
+                    "sudo apt-get install jq -y"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install unzip",
+                "inline": [
+                    "sudo apt-get -y install zip"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install Docker",
+                "inline": [
+                    "sudo bash -c 'install -vm755 <(curl -L https://github.com/docker/machine/releases/download/v0.5.3/docker-machine_linux-amd64) /usr/local/bin/docker-machine'",
+                    "sudo apt install docker.io -y"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install PIP",
+                "inline": [
+                    "sudo apt-get -y install python3-pip",
+                    "sudo apt install -y python-pip"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install Niet",
+                "inline": [
+                    "sudo -H pip install -U niet --system"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install kubectl",
+                "inline": [
+                    "curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl",
+                    "sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl"
+                ]
+            },
+            {
+                "type": "Shell",
+                "name": "Install HELM",
+                "inline": [
+                    "sudo snap install helm --classic"
+                ]
+            }
+        ],
+        "distribute": 
+        [
+            {   
+                "type": "SharedImage",
+                "galleryImageId": "/subscriptions/<subscriptionID>/resourceGroups/<rgName>/providers/Microsoft.Compute/galleries/<sharedImageGalName>/images/<imageDefName>",
+                "runOutputName": "<runOutputName>",
+                "artifactTags": {
+                    "source": "azureVmImageBuilder",
+                    "baseosimg": "ubuntu1804"
+                },
+                "replicationRegions": [
+                  "<region1>",
+                  "<region2>"
+                ]
+            }
+        ]
+    }
+}
